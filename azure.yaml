@@ -1,0 +1,6 @@
+name: otel-tester
+metadata:
+  template: custom
+infra:
+  provider: bicep
+  path: infra
