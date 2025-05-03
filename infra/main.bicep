@@ -17,6 +17,8 @@ var appInsightsName = '${environmentName}-app-insights'
 var logAnalyticsName = '${environmentName}-log-analytics'
 var registryName = '${environmentName}acr'
 var containerEnvName = '${environmentName}-acr-env'
+var containerAppName = '${environmentName}-container'
+var uamiName = '${environmentName}-uami'
 
 // Log Analytics Workspace
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -52,7 +54,76 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2025-01-01' = {
   properties: {}
 }
 
-// Export useful values
-output connectionString string = appInsights.properties.ConnectionString
-output instrumentationKey string = appInsights.properties.InstrumentationKey
-output loginServer string = containerRegistry.properties.loginServer
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
+  location: location
+  name: uamiName
+}
+
+resource readerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(uami.name, 'reader-role')
+  scope: containerRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'acdd72a7-3385-48ef-bd42-f606fba81ae7' // Reader role ID
+    )
+    principalId: uami.properties.principalId
+    principalType: 'ServicePrincipal'
+    description: 'Reader role for the UAMI to read from the container registry'
+  }
+}
+
+resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
+  name: containerAppName
+  location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${uami.id}': {}
+    }
+  }
+  dependsOn: [
+    readerRoleAssignment
+  ]
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+      }
+      registries: [
+        {
+          server: '${containerRegistry.name}.azurecr.io'
+          identity: uami.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          image: '${containerRegistry.name}.azurecr.io/${environmentName}:0.0.1'
+          name: '${environmentName}-container1'
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          env: [
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: appInsights.properties.ConnectionString
+            }
+            {
+              name: 'ASPNETCORE_ENVIRONMENT'
+              value: 'Development'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
