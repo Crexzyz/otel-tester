@@ -4,3 +4,7 @@ metadata:
 infra:
   provider: bicep
   path: infra
+hooks:
+  postprovision:
+    shell: sh
+    run: ./infra/postprovision.sh

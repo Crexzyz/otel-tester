@@ -17,7 +17,6 @@ var appInsightsName = '${environmentName}-app-insights'
 var logAnalyticsName = '${environmentName}-log-analytics'
 var registryName = '${environmentName}acr'
 var containerEnvName = '${environmentName}-acr-env'
-var containerAppName = '${environmentName}-container'
 var uamiName = '${environmentName}-uami'
 
 // Log Analytics Workspace
@@ -73,57 +72,9 @@ resource readerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-0
   }
 }
 
-resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
-  name: containerAppName
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${uami.id}': {}
-    }
-  }
-  dependsOn: [
-    readerRoleAssignment
-  ]
-  properties: {
-    managedEnvironmentId: containerEnv.id
-    configuration: {
-      ingress: {
-        external: true
-        targetPort: 8080
-      }
-      registries: [
-        {
-          server: '${containerRegistry.name}.azurecr.io'
-          identity: uami.id
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          image: '${containerRegistry.name}.azurecr.io/${environmentName}:0.0.1'
-          name: '${environmentName}-container1'
-          resources: {
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
-          env: [
-            {
-              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: appInsights.properties.ConnectionString
-            }
-            {
-              name: 'ASPNETCORE_ENVIRONMENT'
-              value: 'Development'
-            }
-          ]
-        }
-      ]
-      scale: {
-        minReplicas: 1
-        maxReplicas: 1
-      }
-    }
-  }
-}
+output environmentName string = environmentName
+output location string = location
+output uamiId string = uami.id
+output containerEnvId string = containerEnv.id
+output registryName string = containerRegistry.name
+output appInsightsConnectionString string = appInsights.properties.ConnectionString
