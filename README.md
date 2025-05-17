@@ -28,6 +28,12 @@ azd up
 Make sure to choose an alphanumeric environment name to successfully
 create all resources.
 
+Then run the following bash script to build, publish a docker image, and
+create a container:
+```bash
+./infra/postprovision.sh
+```
+
 Clean up resources with:
 ```
 azd down
