@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 
 namespace OtelTester.Api.Controllers;
 
@@ -8,28 +10,30 @@ namespace OtelTester.Api.Controllers;
 public class SimulationParams
 {
     /// <summary>
-    /// Artificial delay in milliseconds to simulate network latency.
+    /// User-defined status code to be returned by the API.
     /// </summary>
-    [Range(0, int.MaxValue)]
-    public int Delay { get; set; } = 0;
-
-    /// <summary>
-    /// Artificial flag to simulate an error.
-    /// </summary>
-    public bool Fail { get; set; } = false;
-
-    /// <summary>
-    /// Custom log message to be sent to the telemetry system.
-    /// </summary>
-    public string Log { get; set; } = string.Empty;
+    public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
 
     /// <summary>
     /// URI of the telemetry system to send the request to. Ignored
     /// for the base request.
     /// </summary>
     [Required]
+    [DefaultValue("localhost")]
     [RegularExpression(@"^((localhost)|((?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})|((\d{1,3}\.){3}\d{1,3}))(:\d{1,5})?$")]
     public string Host { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Artificial delay in milliseconds to simulate network latency.
+    /// </summary>
+    [Range(0, int.MaxValue)]
+    [DefaultValue(0)]
+    public int Delay { get; set; } = 0;
+
+    /// <summary>
+    /// Logging parameters to be used for the custom log.
+    /// </summary>
+    public LogParams LogParams { get; set; } = new();
 
     /// <summary>
     /// Requests to be sent next other instances.
