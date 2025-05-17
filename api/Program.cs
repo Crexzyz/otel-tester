@@ -5,6 +5,7 @@ using Azure.Monitor.OpenTelemetry.AspNetCore;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using OtelTester.Api.Metrics;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,8 @@ otel.WithMetrics(metrics =>
     // Metrics provides by ASP.NET Core in .NET 8
     metrics.AddMeter(nameof(Microsoft.AspNetCore.Hosting));
     metrics.AddMeter(nameof(Microsoft.AspNetCore.Server.Kestrel));
+    // Custom metrics
+    metrics.AddMeter(DefaultMetrics.MeterName);
 });
 
 // Add Tracing for ASP.NET Core and our custom ActivitySource and export via OTLP

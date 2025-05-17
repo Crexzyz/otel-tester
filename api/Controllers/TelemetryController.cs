@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using OtelTester.Api.Metrics;
 
 namespace OtelTester.Api.Controllers;
 
@@ -56,6 +57,9 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SimulateAsync([FromBody] SimulationParams simulation)
     {
+        DefaultMetrics.RequestCounter.Add(1);
+        _logger.LogInternal(LogLevel.Information, "Simulation request received");
+
         if (simulation.Delay > 0)
         {
             Thread.Sleep(simulation.Delay);
