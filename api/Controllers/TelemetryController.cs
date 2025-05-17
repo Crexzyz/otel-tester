@@ -2,7 +2,6 @@ using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using OtelTester.Api.Metrics;
 
 namespace OtelTester.Api.Controllers;
@@ -11,9 +10,8 @@ namespace OtelTester.Api.Controllers;
 /// Controller to simulate telemetry data.
 /// </summary>
 /// <param name="logger">Logger instance.</param>
-/// <param name="jsonOptions">JSON deserializer options.</param>
 [ApiController]
-public class TelemetryController(ILogger<TelemetryController> logger, IOptions<JsonSerializerOptions> jsonOptions) : ControllerBase
+public class TelemetryController(ILogger<TelemetryController> logger) : ControllerBase
 {
     /// <summary>
     /// Default message to return when the simulation finishes.
@@ -26,14 +24,14 @@ public class TelemetryController(ILogger<TelemetryController> logger, IOptions<J
     private const string s_route = "simulate";
 
     /// <summary>
-    /// The global JSON deserializer options.
-    /// </summary>
-    private readonly JsonSerializerOptions _jsonOptions = jsonOptions.Value;
-
-    /// <summary>
     /// Logger instance for the controller.
     /// </summary>
     private readonly ILogger<TelemetryController> _logger = logger;
+
+    /// <summary>
+    /// Hostname setto the current instance.
+    /// </summary>
+    private readonly string _hostname = Environment.GetEnvironmentVariable("OTELTESTER_HOSTNAME")!;
 
     /// <summary>
     /// Validates if the status code can have a response body.
@@ -55,12 +53,13 @@ public class TelemetryController(ILogger<TelemetryController> logger, IOptions<J
     /// <returns>The result of the simulation.</returns>
     private async Task<HopResult> RunNextSimulationAsync(SimulationParams next)
     {
+        KeyValuePair<string, object> tag = new("host", _hostname);
         string protocol = HttpContext.Request.IsHttps
             ? "https"
             : "http";
 
         string nextUri = $"{protocol}://{next.Host}/{s_route}";
-        _logger.LogInternal(LogLevel.Information, $"Chaining request to {nextUri}");
+        _logger.LogInternal(LogLevel.Information, $"Chaining request to {nextUri}", ("host", _hostname));
 
         using HttpClient client = new();
         HttpResponseMessage response = await client.PostAsync(
@@ -71,6 +70,8 @@ public class TelemetryController(ILogger<TelemetryController> logger, IOptions<J
                 MediaTypeNames.Application.Json
             )
         );
+
+        TelemetryMetrics.ChainCounter.Add(1, [new("host", _hostname)]);
 
         HopResult result = await response.Content.ReadFromJsonAsync<HopResult>() ?? new();
 
@@ -92,8 +93,8 @@ public class TelemetryController(ILogger<TelemetryController> logger, IOptions<J
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> SimulateAsync([FromBody] SimulationParams simulation)
     {
-        DefaultMetrics.RequestCounter.Add(1);
-        _logger.LogInternal(LogLevel.Information, "Simulation request received");
+        TelemetryMetrics.RequestCounter.Add(1);
+        _logger.LogInternal(LogLevel.Information, "Simulation request received", ("host", _hostname));
 
         if (simulation.Delay > 0)
         {
@@ -107,6 +108,11 @@ public class TelemetryController(ILogger<TelemetryController> logger, IOptions<J
                 "{message}",
                 simulation.LogParams.Message
             );
+        }
+
+        if (!string.IsNullOrEmpty(simulation.MetricTag))
+        {
+            TelemetryMetrics.TagCounter.Add(1, [new("metricTag", simulation.MetricTag)]);
         }
 
         if (simulation.NextHops.Count == 0)

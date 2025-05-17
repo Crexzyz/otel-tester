@@ -31,6 +31,12 @@ public class SimulationParams
     public int Delay { get; set; } = 0;
 
     /// <summary>
+    /// If not null or empty, adds a new metric value to the tagged counter
+    /// with this tag.
+    /// </summary>
+    public string? MetricTag { get; set; } = null;
+
+    /// <summary>
     /// Logging parameters to be used for the custom log.
     /// </summary>
     public LogParams LogParams { get; set; } = new();

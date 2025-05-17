@@ -29,7 +29,8 @@ otel.WithMetrics(metrics =>
     metrics.AddMeter(nameof(Microsoft.AspNetCore.Hosting));
     metrics.AddMeter(nameof(Microsoft.AspNetCore.Server.Kestrel));
     // Custom metrics
-    metrics.AddMeter(DefaultMetrics.MeterName);
+    metrics.AddMeter(TelemetryMetrics.ApiMeterName);
+    metrics.AddMeter(TelemetryMetrics.TagMeterName);
 });
 
 // Add Tracing for ASP.NET Core and our custom ActivitySource and export via OTLP
