@@ -20,8 +20,11 @@ public class SimulationParams
     /// </summary>
     [Required]
     [DefaultValue("localhost")]
-    [RegularExpression(@"^((localhost)|((?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})|((\d{1,3}\.){3}\d{1,3}))(:\d{1,5})?$")]
-    public string Host { get; set; } = string.Empty;
+    [RegularExpression(
+        @"^(https?:\/\/)?((localhost)|((?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,})|((\d{1,3}\.){3}\d{1,3}))(:\d{1,5})?$",
+        ErrorMessage = "The URI must be a valid domain or IP, with optional port and http or https scheme."
+    )]
+    public string Uri { get; set; } = string.Empty;
 
     /// <summary>
     /// Artificial delay in milliseconds to simulate network latency.

@@ -54,11 +54,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     private async Task<HopResult> RunNextSimulationAsync(SimulationParams next)
     {
         KeyValuePair<string, object> tag = new("host", _hostname);
-        string protocol = HttpContext.Request.IsHttps
-            ? "https"
-            : "http";
-
-        string nextUri = $"{protocol}://{next.Host}/{s_route}";
+        string nextUri = $"{next.Uri}/{s_route}";
         _logger.LogInternal(LogLevel.Information, $"Chaining request to {nextUri}", ("host", _hostname));
 
         using HttpClient client = new();
@@ -77,7 +73,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
 
         return new()
         {
-            Host = next.Host,
+            Host = next.Uri,
             StatusCode = response.StatusCode.ToString(),
             Message = result.Message,
             Hops = result.Hops
@@ -123,7 +119,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
                 {
                     Message = s_defaultSuccessMessage,
                     StatusCode = simulation.StatusCode.ToString(),
-                    Host = simulation.Host,
+                    Host = simulation.Uri,
                     Hops = []
                 })
                 : StatusCode(statusCode);
@@ -140,7 +136,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
         {
             Message = s_defaultSuccessMessage,
             StatusCode = simulation.StatusCode.ToString(),
-            Host = simulation.Host,
+            Host = simulation.Uri,
             Hops = responses
         });
     }

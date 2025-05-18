@@ -1,45 +1,57 @@
 #!/bin/bash
+
+# Exit on error
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Load AZD environment variables
 eval "$(azd env get-values)"
 
-echo "🔍 Using resource group: $AZURE_RESOURCE_GROUP"
-
+containerVersion="1.0.0"
 deploymentName=$(az deployment group list \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --query "[0].name" -o tsv)
 
-echo "🔍 Using the latest deployment: $deploymentName"
-
-# Fetch outputs from the initial deployment
-outputs=$(az deployment group show \
-  --resource-group "$AZURE_RESOURCE_GROUP" \
-  --name "$deploymentName" \
-  --query "properties.outputs")
-
-# Extract each output value using jq
-environmentName=$(echo $outputs | jq -r '.environmentName.value')
-location=$(echo $outputs | jq -r '.location.value')
-uamiId=$(echo $outputs | jq -r '.uamiId.value')
-containerEnvId=$(echo $outputs | jq -r '.containerEnvId.value')
-registryName=$(echo $outputs | jq -r '.registryName.value')
-appInsightsConn=$(echo $outputs | jq -r '.appInsightsConnectionString.value')
+echo "⤵️  Postprovision variables: "
+echo "AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
+echo "AZURE_REGION: $AZURE_REGION"
+echo "AZURE_ENVIRONMENT: $AZURE_ENVIRONMENT"
+echo "appInsightsConnectionString:${appInsightsConnectionString:+ (value hidden)}"
+echo "containerEnvId: $containerEnvId"
+echo "environmentName: $environmentName"
+echo "location: $location"
+echo "registryName: $registryName"
+echo "uamiId: $uamiId"
+echo "containerVersion: $containerVersion"
+echo "deploymentName: $deploymentName"
 
 # Build  and push the container image
-echo "Pushing container image to ACR"
-az acr login --name $registryName
-docker push "$registryName.azurecr.io/$environmentName:0.0.1"
+echo "💿 Creating container image"
+docker build \
+    -t "$registryName.azurecr.io/$environmentName:$containerVersion" \
+    -f "$SCRIPT_DIR/../api/Dockerfile" \
+    "$SCRIPT_DIR/../api"
 
-# Deploy container app with those values
-az deployment group create \
-  --resource-group "$AZURE_RESOURCE_GROUP" \
-  --name "$deploymentName-container" \
-  --template-file infra/container.bicep \
-  --parameters \
-      environmentName="$environmentName" \
-      location="$location" \
-      uamiId="$uamiId" \
-      containerEnvId="$containerEnvId" \
-      registryName="$registryName" \
-      appInsightsConnectionString="$appInsightsConn"
+echo "⬆️  Pushing container image to ACR"
+az acr login --name $registryName
+docker push "$registryName.azurecr.io/$environmentName:$containerVersion"
+
+for appName in "$@"; do
+    echo "🌐  Creating container deployment for $appName"
+    az deployment group create \
+    --resource-group "$AZURE_RESOURCE_GROUP" \
+    --name "container-$(date +%Y-%m-%d_%H-%M-%S)" \
+    --template-file infra/container.bicep \
+    --query "{status: properties.provisioningState, name: name}" \
+    --output json \
+    --parameters \
+        environmentName="$environmentName" \
+        location="$location" \
+        uamiId="$uamiId" \
+        containerEnvId="$containerEnvId" \
+        registryName="$registryName" \
+        appInsightsConnectionString="$appInsightsConnectionString" \
+        containerVersion="$containerVersion" \
+        hostname="$appName"
+done
