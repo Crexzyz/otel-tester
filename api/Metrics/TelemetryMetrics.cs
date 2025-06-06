@@ -41,11 +41,17 @@ public static class TelemetryMetrics
         description: "Total number of requests to the simulate API"
     );
 
+    /// <summary>
+    /// Counter to track the number of chained requests done by an instance.
+    /// </summary>
     public static readonly Counter<long> ChainCounter = ApiMeter.CreateCounter<long>(
         "oteltester.apimetrics.chainrequests",
         description: "Total number of chained requests done by an instance"
     );
 
+    /// <summary>
+    /// Counter for dynamically tagged counts.
+    /// </summary>
     public static readonly Counter<long> TagCounter = TagsMeter.CreateCounter<long>(
         "oteltester.tagmetrics.taggedcounter",
         description: "Total number of dynamically tagged counts"
