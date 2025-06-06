@@ -8,17 +8,15 @@ using OpenTelemetry.Trace;
 using OtelTester.Api.Metrics;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-
-#pragma warning disable CS0618 // Type or member is obsolete
 OpenTelemetryBuilder otel = builder.Services.AddOpenTelemetry();
-#pragma warning restore CS0618 // Type or member is obsolete
 
 // Setup logging to be exported via OpenTelemetry
+builder.Logging.ClearProviders();
 builder.Logging.AddOpenTelemetry(logging =>
 {
     logging.IncludeFormattedMessage = true;
     logging.IncludeScopes = true;
-});
+}).AddConsole();
 
 // Add Metrics for ASP.NET Core and our custom metrics and export via OTLP
 otel.WithMetrics(metrics =>
