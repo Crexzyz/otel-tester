@@ -1,4 +1,4 @@
-namespace OtelTester.Api.Controllers;
+namespace OtelTester.Api.Models;
 
 /// <summary>
 /// Class representing the result of a hop.

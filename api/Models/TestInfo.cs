@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization;
-using OtelTester.Api.Models;
 
-namespace OtelTester.Api.Controllers;
+namespace OtelTester.Api.Models;
 
 /// <summary>
 /// Information about a test run.

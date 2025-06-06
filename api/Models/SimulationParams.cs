@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 
-namespace OtelTester.Api.Controllers;
+namespace OtelTester.Api.Models;
 
 /// <summary>
 /// Parameters passed to the API to simulate metrics.

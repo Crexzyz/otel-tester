@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace OtelTester.Api.Controllers;
+namespace OtelTester.Api.Models;
 
 /// <summary>
 /// Parameters for the logging simulation.
