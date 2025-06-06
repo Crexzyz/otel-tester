@@ -87,7 +87,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
             return BadRequest("Maximum number of tests reached.");
         }
 
-        Guid testId = Guid.NewGuid();
+        Guid testId = Guid.Parse(HttpContext.Items[CorrelationIdMiddleware.CorrelationIdHeader]!.ToString()!);
         TestInfo testInfo = new(testId, testRun);
         if (!s_simulations.TryAdd(testId, testInfo))
         {

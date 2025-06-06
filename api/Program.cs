@@ -5,6 +5,7 @@ using Azure.Monitor.OpenTelemetry.AspNetCore;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using OtelTester.Api;
 using OtelTester.Api.Metrics;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -77,6 +78,7 @@ builder.Services.AddSwaggerGen(options =>
 
 WebApplication app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSwagger();
 
 if (app.Environment.IsDevelopment())
