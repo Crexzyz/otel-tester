@@ -29,7 +29,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     private readonly ILogger<TelemetryController> _logger = logger;
 
     /// <summary>
-    /// Hostname setto the current instance.
+    /// Hostname set to the current instance.
     /// </summary>
     private readonly string _hostname = Environment.GetEnvironmentVariable("OTELTESTER_HOSTNAME")!;
 
@@ -94,7 +94,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
 
         if (simulation.Delay > 0)
         {
-            Thread.Sleep(simulation.Delay);
+            await Task.Delay(simulation.Delay);
         }
 
         if (!string.IsNullOrEmpty(simulation.LogParams.Message))
