@@ -11,8 +11,8 @@ namespace OtelTester.Api.Controllers;
 /// Controller to simulate telemetry data.
 /// </summary>
 /// <param name="logger">Logger instance.</param>
-[ApiController]
-public class TelemetryController(ILogger<TelemetryController> logger) : ControllerBase
+/// <param name="clientFactory">Factory to create HTTP clients.</param>
+public class TelemetryController(ILogger<TelemetryController> logger, IHttpClientFactory clientFactory) : OtelTesterController(logger, clientFactory)
 {
     /// <summary>
     /// Default message to return when the simulation finishes.
@@ -23,11 +23,6 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     /// Route for the simulation endpoint.
     /// </summary>
     private const string s_route = "simulate";
-
-    /// <summary>
-    /// Logger instance for the controller.
-    /// </summary>
-    private readonly ILogger<TelemetryController> _logger = logger;
 
     /// <summary>
     /// Hostname set to the current instance.
@@ -56,10 +51,9 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     {
         KeyValuePair<string, object> tag = new("host", _hostname);
         string nextUri = $"{next.Uri}/{s_route}";
-        _logger.LogInternal(LogLevel.Information, $"Chaining request to {nextUri}", ("host", _hostname));
+        Logger.LogInternal(LogLevel.Information, $"Chaining request to {nextUri}", ("host", _hostname));
 
-        using HttpClient client = new();
-        HttpResponseMessage response = await client.PostAsync(
+        HttpResponseMessage response = await HttpClient.PostAsync(
             nextUri,
             new StringContent(
                 JsonSerializer.Serialize(next),
@@ -91,7 +85,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
     public async Task<IActionResult> SimulateAsync([FromBody] SimulationParams simulation)
     {
         TelemetryMetrics.RequestCounter.Add(1);
-        _logger.LogInternal(LogLevel.Information, "Simulation request received", ("host", _hostname));
+        Logger.LogInternal(LogLevel.Information, "Simulation request received", ("host", _hostname));
 
         if (simulation.Delay > 0)
         {
@@ -100,7 +94,7 @@ public class TelemetryController(ILogger<TelemetryController> logger) : Controll
 
         if (!string.IsNullOrEmpty(simulation.LogParams.Message))
         {
-            _logger.Log(
+            Logger.Log(
                 simulation.LogParams.LogLevel,
                 "{message}",
                 simulation.LogParams.Message

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Primitives;
 
-namespace OtelTester.Api;
+namespace OtelTester.Api.Middleware;
 
 /// <summary>
 /// Middleware to handle correlation IDs in HTTP requests.

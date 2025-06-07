@@ -7,6 +7,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using OtelTester.Api;
 using OtelTester.Api.Metrics;
+using OtelTester.Api.Middleware;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 OpenTelemetryBuilder otel = builder.Services.AddOpenTelemetry();
@@ -50,6 +51,11 @@ if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
 {
     otel.UseAzureMonitor();
 }
+
+builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient(CorrelationIdDelegatingHandler.HttpClientName)
+    .AddHttpMessageHandler<CorrelationIdDelegatingHandler>();
 
 builder.Services
     .AddControllers()

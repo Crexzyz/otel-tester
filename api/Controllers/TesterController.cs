@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Mvc;
+using OtelTester.Api.Middleware;
 using OtelTester.Api.Models;
 
 namespace OtelTester.Api.Controllers;
@@ -8,8 +9,8 @@ namespace OtelTester.Api.Controllers;
 /// Controller for triggering testing tasks.
 /// </summary>
 /// <param name="logger">Logger instance.</param>
-[ApiController]
-public class TesterController(ILogger<TesterController> logger) : ControllerBase
+/// /// <param name="clientFactory">Factory to create HTTP clients.</param>
+public class TesterController(ILogger<TesterController> logger, IHttpClientFactory clientFactory) : OtelTesterController(logger, clientFactory)
 {
     /// <summary>
     /// Base route for the tester controller.
@@ -29,11 +30,6 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     ];
 
     /// <summary>
-    /// Logger instance for the controller.
-    /// </summary>
-    private readonly ILogger<TesterController> _logger = logger;
-
-    /// <summary>
     /// Max number of simulations allowed at a time.
     /// </summary>
     private const int s_maxSimulations = 3;
@@ -43,12 +39,11 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     /// </summary>
     /// <param name="testInfo">Information about the test to run.</param>
     /// <param name="token">Cancellation token for the operation.</param>
-    private static async Task ProcessTestAsync(
+    private async Task ProcessTestAsync(
         TestInfo testInfo, CancellationToken token = default
     )
     {
         TestRun testRun = testInfo.TestRun;
-        HttpClient client = new();
 
         for (int repetition = 0; repetition < testRun.Repetitions; repetition++)
         {
@@ -56,7 +51,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
             foreach (SimulationParams simulation in testRun.Simulations)
             {
                 testInfo.CurrentSimulation = simulation;
-                await client.PostAsJsonAsync($"{simulation.Uri}/simulate", simulation, token);
+                await HttpClient.PostAsJsonAsync($"{simulation.Uri}/simulate", simulation, token);
                 await Task.Delay(testRun.DelayBetweenSimulations, token);
             }
         }
@@ -76,14 +71,14 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult NewTest([FromBody] TestRun testRun)
     {
-        _logger.LogInternal(LogLevel.Information, "Processing new test request", _testerTags);
+        Logger.LogInternal(LogLevel.Information, "Processing new test request", _testerTags);
         int runningTests = s_simulations.Values
             .Where(s => s.Status == TestInfo.RunningStatus)
             .Count();
 
         if (runningTests >= s_maxSimulations)
         {
-            _logger.LogInternal(LogLevel.Debug, $"Maximum number of tests reached: {s_maxSimulations}", _testerTags);
+            Logger.LogInternal(LogLevel.Debug, $"Maximum number of tests reached: {s_maxSimulations}", _testerTags);
             return BadRequest("Maximum number of tests reached.");
         }
 
@@ -91,7 +86,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
         TestInfo testInfo = new(testId, testRun);
         if (!s_simulations.TryAdd(testId, testInfo))
         {
-            _logger.LogInternal(LogLevel.Error, $"Failed to add new test with ID {testId}", _testerTags);
+            Logger.LogInternal(LogLevel.Error, $"Failed to add new test with ID {testId}", _testerTags);
             return StatusCode(StatusCodes.Status500InternalServerError, "Failed to start new test.");
         }
 
@@ -104,7 +99,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
                 testInfo.Run();
                 await ProcessTestAsync(testInfo, token);
                 testInfo.Complete();
-                _logger.LogInternal(LogLevel.Information, $"Test {testId} successfully completed", _testerTags);
+                Logger.LogInternal(LogLevel.Information, $"Test {testId} successfully completed", _testerTags);
             }
             catch (TaskCanceledException)
             {
@@ -112,13 +107,13 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
             }
             catch (Exception ex)
             {
-                _logger.LogInternal(LogLevel.Error, $"Unexpected error in test {testId}: {ex.Message}", _testerTags);
+                Logger.LogInternal(LogLevel.Error, $"Unexpected error in test {testId}: {ex.Message}", _testerTags);
                 testInfo.OnFailed(ex.Message);
             }
         });
 
-        _logger.LogInternal(LogLevel.Information, $"Started new simulation with ID {testId}", _testerTags);
-        _logger.LogInternal(LogLevel.Debug, $"Running simulations: {runningTests + 1}", _testerTags);
+        Logger.LogInternal(LogLevel.Information, $"Started new simulation with ID {testId}", _testerTags);
+        Logger.LogInternal(LogLevel.Debug, $"Running simulations: {runningTests + 1}", _testerTags);
         return Created($"{s_route}/{testId}", testInfo);
     }
 
@@ -131,7 +126,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult GetTests()
     {
-        _logger.LogInternal(LogLevel.Debug, "Retrieving all tests", _testerTags);
+        Logger.LogInternal(LogLevel.Debug, "Retrieving all tests", _testerTags);
         if (s_simulations.IsEmpty)
         {
             return NoContent();
@@ -150,7 +145,7 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetTest(Guid id)
     {
-        _logger.LogInternal(LogLevel.Debug, $"Getting test with ID {id}", _testerTags);
+        Logger.LogInternal(LogLevel.Debug, $"Getting test with ID {id}", _testerTags);
         if (!s_simulations.TryGetValue(id, out TestInfo? simulation))
         {
             return NotFound();
@@ -169,21 +164,21 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult CancelTest(Guid id)
     {
-        _logger.LogInternal(LogLevel.Debug, $"Canceling test with ID {id}", _testerTags);
+        Logger.LogInternal(LogLevel.Debug, $"Canceling test with ID {id}", _testerTags);
         if (!s_simulations.TryGetValue(id, out TestInfo? simulation))
         {
-            _logger.LogInternal(LogLevel.Debug, "Test was not found");
+            Logger.LogInternal(LogLevel.Debug, "Test was not found");
             return NotFound();
         }
 
         if (simulation.Status != TestInfo.RunningStatus)
         {
-            _logger.LogInternal(LogLevel.Debug, $"Test with ID {id} is not running, cannot cancel.", _testerTags);
+            Logger.LogInternal(LogLevel.Debug, $"Test with ID {id} is not running, cannot cancel.", _testerTags);
             return BadRequest("Test is not running, cannot cancel.");
         }
 
         simulation.CancellationTokenSource.Cancel();
-        _logger.LogInternal(LogLevel.Information, $"Cancellation requested for test with ID {id}", _testerTags);
+        Logger.LogInternal(LogLevel.Information, $"Cancellation requested for test with ID {id}", _testerTags);
         return NoContent();
     }
 
@@ -198,26 +193,26 @@ public class TesterController(ILogger<TesterController> logger) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult DeleteTest(Guid id)
     {
-        _logger.LogInternal(LogLevel.Debug, $"Deleting test with ID {id}", _testerTags);
+        Logger.LogInternal(LogLevel.Debug, $"Deleting test with ID {id}", _testerTags);
         if (!s_simulations.TryGetValue(id, out TestInfo? simulation))
         {
-            _logger.LogInternal(LogLevel.Debug, "Test was not found", _testerTags);
+            Logger.LogInternal(LogLevel.Debug, "Test was not found", _testerTags);
             return NotFound();
         }
 
         if (simulation.Status == TestInfo.RunningStatus)
         {
             simulation.CancellationTokenSource.Cancel();
-            _logger.LogInternal(LogLevel.Debug, "Cancellation requested for test with ID {id}", _testerTags);
+            Logger.LogInternal(LogLevel.Debug, "Cancellation requested for test with ID {id}", _testerTags);
         }
 
         if (!s_simulations.TryRemove(id, out _))
         {
-            _logger.LogInternal(LogLevel.Error, $"Failed to remove test with ID {id}", _testerTags);
+            Logger.LogInternal(LogLevel.Error, $"Failed to remove test with ID {id}", _testerTags);
             return StatusCode(StatusCodes.Status500InternalServerError, "Failed to delete test.");
         }
 
-        _logger.LogInternal(LogLevel.Information, $"Deleted test with ID {id}", _testerTags);
+        Logger.LogInternal(LogLevel.Information, $"Deleted test with ID {id}", _testerTags);
         return NoContent();
     }
 }

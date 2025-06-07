@@ -42,7 +42,7 @@ for appName in "$@"; do
     az deployment group create \
     --resource-group "$AZURE_RESOURCE_GROUP" \
     --name "container-$(date +%Y-%m-%d_%H-%M-%S)" \
-    --template-file infra/container.bicep \
+    --template-file $SCRIPT_DIR/container.bicep \
     --query "{status: properties.provisioningState, name: name}" \
     --output json \
     --parameters \
