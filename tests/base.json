@@ -1,0 +1,267 @@
+{
+  "delayBetweenSimulations": 5000,
+  "repetitions": 10,
+  "simulations": [
+    {
+      "statusCode": "OK",
+      "uri": "https://localhost:8081",
+      "delay": 0,
+      "metricTag": "root",
+      "logParams": {
+        "message": "Scenario1 root",
+        "logLevel": "Information"
+      },
+      "nextHops": [
+        {
+          "statusCode": "BadRequest",
+          "uri": "https://localhost:8082",
+          "delay": 3000,
+          "metricTag": "badrequest",
+          "logParams": {
+            "message": "Pod2 S1 Error",
+            "logLevel": "Error"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8082",
+          "delay": 1000,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod2 S1 Success",
+            "logLevel": "Information"
+          },
+          "nextHops": [
+            {
+              "statusCode": "OK",
+              "uri": "https://localhost:8083",
+              "delay": 1000,
+              "metricTag": "ok",
+              "logParams": {
+                "message": "Pod 2 to 3 Message",
+                "logLevel": "Warning"
+              },
+              "nextHops": [
+                {
+                  "statusCode": "BadRequest",
+                  "uri": "https://localhost:8081",
+                  "delay": 5000,
+                  "metricTag": "loop",
+                  "logParams": {
+                    "message": "Pod3 Loop Fail",
+                    "logLevel": "Information"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "statusCode": "OK",
+      "uri": "https://localhost:8081",
+      "delay": 3000,
+      "metricTag": "root",
+      "logParams": {
+        "message": "Scenario2 root",
+        "logLevel": "Information"
+      },
+      "nextHops": [
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8083",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod3 S2 1",
+            "logLevel": "Information"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8083",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod3 S2 2",
+            "logLevel": "Information"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8083",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod3 S2 3",
+            "logLevel": "Information"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8082",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod2 S2 1",
+            "logLevel": "Information"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8082",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod2 S2 2",
+            "logLevel": "Information"
+          }
+        },
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8082",
+          "delay": 0,
+          "metricTag": "ok",
+          "logParams": {
+            "message": "Pod2 S2 3",
+            "logLevel": "Information"
+          }
+        }
+      ]
+    },
+    {
+      "statusCode": "OK",
+      "uri": "https://localhost:8083",
+      "delay": 1000,
+      "metricTag": "root",
+      "logParams": {
+        "message": "Scenario3 root",
+        "logLevel": "Information"
+      },
+      "nextHops": [
+        {
+          "statusCode": "OK",
+          "uri": "https://localhost:8082",
+          "delay": 1000,
+          "metricTag": "loop",
+          "logParams": {
+            "message": "S3 3t2",
+            "logLevel": "Information"
+          },
+          "nextHops": [
+            {
+              "statusCode": "OK",
+              "uri": "https://localhost:8081",
+              "delay": 1000,
+              "metricTag": "loop",
+              "logParams": {
+                "message": "S3 2t1",
+                "logLevel": "Information"
+              },
+              "nextHops": [
+                {
+                  "statusCode": "OK",
+                  "uri": "https://localhost:8083",
+                  "delay": 1000,
+                  "metricTag": "loop",
+                  "logParams": {
+                    "message": "S3 1t3",
+                    "logLevel": "Information"
+                  },
+                  "nextHops": [
+                    {
+                      "statusCode": "OK",
+                      "uri": "https://localhost:8082",
+                      "delay": 1000,
+                      "metricTag": "loop",
+                      "logParams": {
+                        "message": "S3 3t2",
+                        "logLevel": "Information"
+                      },
+                      "nextHops": [
+                        {
+                          "statusCode": "OK",
+                          "uri": "https://localhost:8081",
+                          "delay": 1000,
+                          "metricTag": "loop",
+                          "logParams": {
+                            "message": "S3 2t1",
+                            "logLevel": "Information"
+                          },
+                          "nextHops": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "statusCode": "OK",
+      "uri": "https://localhost:8082",
+      "delay": 0,
+      "metricTag": "root",
+      "logParams": {
+        "message": "Scenario4 root",
+        "logLevel": "Information"
+      },
+      "nextHops": [
+        {
+          "statusCode": "BadRequest",
+          "uri": "https://localhost:8081",
+          "delay": 4000,
+          "metricTag": "badrequest",
+          "logParams": {
+            "message": "S4 Pod1 BR",
+            "logLevel": "Error"
+          }
+        },
+        {
+          "statusCode": "BadRequest",
+          "uri": "https://localhost:8083",
+          "delay": 4000,
+          "metricTag": "badrequest",
+          "logParams": {
+            "message": "S4 Pod3 BR",
+            "logLevel": "Error"
+          }
+        }
+      ]
+    },
+    {
+      "statusCode": "RequestTimeout",
+      "uri": "https://localhost:8081",
+      "delay": 10000,
+      "metricTag": "self",
+      "logParams": {
+        "message": "S5 P1 Simulated timeout",
+        "logLevel": "Information"
+      }
+    },
+    {
+      "statusCode": "RequestTimeout",
+      "uri": "https://localhost:8082",
+      "delay": 10000,
+      "metricTag": "self",
+      "logParams": {
+        "message": "S6 P2 Simulated timeout",
+        "logLevel": "Information"
+      }
+    },
+    {
+      "statusCode": "RequestTimeout",
+      "uri": "https://localhost:8083",
+      "delay": 10000,
+      "metricTag": "self",
+      "logParams": {
+        "message": "S7 P3 Simulated timeout",
+        "logLevel": "Information"
+      }
+    }
+  ]
+}
